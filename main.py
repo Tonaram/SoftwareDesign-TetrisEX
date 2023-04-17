@@ -25,6 +25,6 @@ while running:
         # Flip the display
         pygame.display.flip()
 
-# Done! Time to quit.
+# Done! Time to quit. GG
 
 # Path: main.py
