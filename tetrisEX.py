@@ -1,18 +1,20 @@
 import pygame
 import random
+import os
 
+pygame.mixer.init()
 pygame.font.init()
 
 # Constants
 S_WIDTH = 800
-S_HEIGHT = 700
+S_HEIGHT = 750
 PLAY_WIDTH = 300  # meaning 300 // 10 = 30 width per block
 PLAY_HEIGHT = 600  # meaning 600 // 20 = 20 height per block
 BLOCK_SIZE = 30
 TOP_LEFT_X = (S_WIDTH - PLAY_WIDTH) // 2
-TOP_LEFT_Y = S_HEIGHT - PLAY_HEIGHT
+TOP_LEFT_Y = S_HEIGHT - PLAY_HEIGHT - 50
 
-
+current_song = ""
 # SHAPE FORMATS
 
 S = [['.....',
@@ -187,7 +189,7 @@ def get_shape():
 
 
 def draw_text_middle(text, size, color, surface):
-    font = pygame.font.SysFont('jokerman', size, bold=True)
+    font = pygame.font.SysFont('forte', size)
     label = font.render(text, 1, color)
 
     surface.blit(label, (TOP_LEFT_X + PLAY_WIDTH/2 - (label.get_width() / 2), TOP_LEFT_Y + PLAY_HEIGHT/2 - label.get_height()/2))
@@ -203,34 +205,36 @@ def draw_grid(surface, row, col):
 
 
 def clear_rows(grid, locked):
-    # need to see if row is clear the shift every other row above down one
-
     inc = 0
-    for i in range(len(grid)-1,-1,-1):
+    full_rows = []
+
+    # Find full rows
+    for i in range(len(grid) - 1, -1, -1):
         row = grid[i]
         if (0, 0, 0) not in row:
             inc += 1
-            # add positions to remove from locked
-            ind = i
+            full_rows.append(i)
             for j in range(len(row)):
                 try:
                     del locked[(j, i)]
                 except:
                     continue
-    if inc > 0:
-        for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
-            x, y = key
-            if y < ind:
-                newKey = (x, y + inc)
-                locked[newKey] = locked.pop(key)
+
+    # shift rows
+    for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
+        x, y = key
+        rows_to_shift_down = sum(row_index > y for row_index in full_rows)
+        if rows_to_shift_down > 0:
+            newKey = (x, y + rows_to_shift_down)
+            locked[newKey] = locked.pop(key)
     return inc
 
 
 def draw_next_shape(shape, surface):
-    font = pygame.font.SysFont('jokerman', 30)
+    font = pygame.font.SysFont('forte', 30)
     label = font.render('Next Shape', 1, (255,255,255))
 
-    sx = TOP_LEFT_X + PLAY_WIDTH + 50
+    sx = TOP_LEFT_X + PLAY_WIDTH + 40
     sy = TOP_LEFT_Y + PLAY_HEIGHT/2 - 100
     format = shape.shape[shape.rotation % len(shape.shape)]
 
@@ -238,15 +242,15 @@ def draw_next_shape(shape, surface):
         row = list(line)
         for j, column in enumerate(row):
             if column == '0':
-                pygame.draw.rect(surface, shape.color, (sx + j * BLOCK_SIZE, sy + i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+                pygame.draw.rect(surface, shape.color, (sx + j * BLOCK_SIZE, sy + i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 100)
 
-    surface.blit(label, (sx + 10, sy- 30))
+    surface.blit(label, (sx + 10, sy - 30))
 
 
 def draw_window(surface):
     surface.fill((0,0,0))
     # Tetris Title
-    font = pygame.font.SysFont('jokerman', 60)
+    font = pygame.font.SysFont('forte', 50)
     label = font.render('TETRIS', 1, (255,255,255))
 
     surface.blit(label, (TOP_LEFT_X + PLAY_WIDTH / 2 - (label.get_width() / 2), BLOCK_SIZE))
@@ -262,11 +266,11 @@ def draw_window(surface):
 
 
 def draw_score(surface, score):
-    font = pygame.font.SysFont('jokerman', 30)
+    font = pygame.font.SysFont('forte', 30)
     label = font.render('Score: ' + str(score), 1, (255,255,255))
 
-    sx = TOP_LEFT_X + PLAY_WIDTH + 50
-    sy = TOP_LEFT_Y + PLAY_HEIGHT / 2 - 100
+    sx = TOP_LEFT_X + PLAY_WIDTH + 60
+    sy = TOP_LEFT_Y + PLAY_HEIGHT / 2 - 300
 
     surface.blit(label, (sx , sy))
 
@@ -276,8 +280,34 @@ def calculate_fall_speed(score):
     milestones = score // 50
     return max(base_speed - milestones * speed_increase, 0.05)
 
+def load_songs():
+    songs = []
+    music_path = "music"
+    for song in os.listdir(music_path):
+        if song.endswith('.mp3') or song.endswith('.ogg'):
+            songs.append(os.path.join(music_path, song))
+    return songs
 
-def main():
+def play_random_song(songs):
+    global current_song
+    current_song = random.choice(songs)
+    pygame.mixer.music.load(current_song)
+    pygame.mixer.music.play(0)
+    return os.path.basename(current_song)
+
+def draw_current_song(surface, current_song):
+    font = pygame.font.SysFont('forte', 20)
+    label = font.render('Now Playing: ' + current_song, 1, (255,255,255))
+
+    surface.blit(label, (S_WIDTH // 2 - label.get_width() // 2, S_HEIGHT - 40))
+
+def check_music(songs):
+    global current_song
+    if not pygame.mixer.music.get_busy():
+        current_song = play_random_song(songs)
+    return os.path.basename(current_song)
+
+def main(songs):
     global grid
     #init variables
     locked_positions = {}  # (x,y):(255,0,0)
@@ -291,6 +321,7 @@ def main():
     fall_time = 0
     fall_speed = calculate_fall_speed(0)
     score = 0
+    current_song = play_random_song(songs)
     #lock delay variables
     ld_time = 0
     ld_limit = 20
@@ -302,6 +333,8 @@ def main():
         grid = create_grid(locked_positions)
         fall_time += clock.get_rawtime()
         clock.tick()
+
+        current_song = check_music(songs)
             
         # handle piece falling
         keys = pygame.key.get_pressed()  
@@ -389,6 +422,7 @@ def main():
         draw_window(win)
         draw_next_shape(next_piece, win)
         draw_score(win, score)
+        draw_current_song(win, current_song)
         pygame.display.update()
 
         # Check if user lost
@@ -403,6 +437,7 @@ def main():
 
 def main_menu():
     run = True
+    songs = load_songs()
     while run:
         win.fill((0,0,0))
         draw_text_middle('Press any key to begin', 60, (255, 255, 255), win)
@@ -412,7 +447,8 @@ def main_menu():
                 run = False
 
             if event.type == pygame.KEYDOWN:
-                main()
+                play_random_song(songs)
+                main(songs)
     pygame.quit()
 
 
