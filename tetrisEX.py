@@ -132,7 +132,14 @@ class Piece(object):
         self.shape = shape
         self.color = SHAPE_COLORS[SHAPES.index(shape)]
         self.rotation = 0  # number from 0-3
-
+    
+    def ghost_piece_position(self, grid):
+        ghost_piece = Piece(self.x, self.y, self.shape)
+        ghost_piece.rotation = self.rotation
+        while valid_space(ghost_piece, grid):
+            ghost_piece.y += 1
+        ghost_piece.y -= 1
+        return ghost_piece
 
 def create_grid(locked_positions={}):
     grid = [[(0,0,0) for x in range(10)] for x in range(20)]
@@ -230,6 +237,7 @@ def clear_rows(grid, locked):
     return inc
 
 
+
 def draw_next_shape(shape, surface):
     font = pygame.font.SysFont('forte', 30)
     label = font.render('Next Shape', 1, (255,255,255))
@@ -247,7 +255,7 @@ def draw_next_shape(shape, surface):
     surface.blit(label, (sx + 10, sy - 30))
 
 
-def draw_window(surface):
+def draw_window(surface, ghost_piece):
     surface.fill((0,0,0))
     # Tetris Title
     font = pygame.font.SysFont('forte', 50)
@@ -259,10 +267,16 @@ def draw_window(surface):
         for j in range(len(grid[i])):
             pygame.draw.rect(surface, grid[i][j], (TOP_LEFT_X + j * BLOCK_SIZE, TOP_LEFT_Y + i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
 
+    # Draw ghost piece
+    ghost_piece_positions = convert_shape_format(ghost_piece)
+    for i in range(len(ghost_piece_positions)):
+        x, y = ghost_piece_positions[i]
+        if y > -1:
+            pygame.draw.rect(surface, (169, 169, 169), (TOP_LEFT_X + x * BLOCK_SIZE + 1, TOP_LEFT_Y + y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2), 1)
+
     # draw grid and border
     draw_grid(surface, 20, 10)
     pygame.draw.rect(surface, (255, 0, 0), (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT), 5)
-    # pygame.display.update()
 
 
 def draw_score(surface, score):
@@ -307,12 +321,35 @@ def check_music(songs):
         current_song = play_random_song(songs)
     return os.path.basename(current_song)
 
+def draw_fps(surface, fps):
+    font = pygame.font.SysFont('forte', 30)
+    label = font.render(f"FPS: {int(fps)}", 1, (255, 255, 255))
+    surface.blit(label, (10, 10))
+
+def draw_hold_shape(shape, surface):
+    font = pygame.font.SysFont('forte', 30)
+    label = font.render('Hold', 1, (255,255,255))
+
+    sx = TOP_LEFT_X - PLAY_WIDTH // 2 - 60
+    sy = TOP_LEFT_Y + PLAY_HEIGHT // 2 - 100
+    format = shape.shape[shape.rotation % len(shape.shape)]
+
+    for i, line in enumerate(format):
+        row = list(line)
+        for j, column in enumerate(row):
+            if column == '0':
+                pygame.draw.rect(surface, shape.color, (sx + j * BLOCK_SIZE, sy + i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+
+    surface.blit(label, (sx + 10, sy - 30))
+
 def main(songs):
     global grid
     #init variables
     locked_positions = {}  # (x,y):(255,0,0)
     grid = create_grid(locked_positions)
 
+    hold_piece = None
+    hold_switched = False
     change_piece = False
     run = True
     current_piece = get_shape()
@@ -331,8 +368,11 @@ def main(songs):
     while run:
 
         grid = create_grid(locked_positions)
+        ghost_piece = current_piece.ghost_piece_position(grid)
         fall_time += clock.get_rawtime()
         clock.tick()
+
+        fps = clock.get_fps()
 
         current_song = check_music(songs)
             
@@ -395,6 +435,19 @@ def main(songs):
                         current_piece.y += 1
                     current_piece.y -= 1
                     change_piece = True
+                
+                elif event.key == pygame.K_c:
+                    if not hold_switched:
+                        if hold_piece is None:
+                            hold_piece = current_piece
+                            current_piece = next_piece
+                            next_piece = get_shape()
+                        else:
+                            hold_piece, current_piece = current_piece, hold_piece
+                            current_piece.x = 5
+                            current_piece.y = 0
+                        hold_switched = True
+
         # update shape position on grid
         shape_pos = convert_shape_format(current_piece)
 
@@ -412,6 +465,7 @@ def main(songs):
             current_piece = next_piece
             next_piece = get_shape()
             change_piece = False
+            hold_switched = False
 
             cleared_rows = clear_rows(grid, locked_positions)
             if cleared_rows:
@@ -419,10 +473,13 @@ def main(songs):
                 fall_speed = calculate_fall_speed(score)
         
         # update the window
-        draw_window(win)
+        draw_window(win, ghost_piece)
         draw_next_shape(next_piece, win)
         draw_score(win, score)
         draw_current_song(win, current_song)
+        draw_fps(win, fps)
+        if hold_piece:
+            draw_hold_shape(hold_piece, win)
         pygame.display.update()
 
         # Check if user lost
