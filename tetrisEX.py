@@ -272,7 +272,7 @@ def draw_window(surface, ghost_piece):
     for i in range(len(ghost_piece_positions)):
         x, y = ghost_piece_positions[i]
         if y > -1:
-            pygame.draw.rect(surface, (169, 169, 169), (TOP_LEFT_X + x * BLOCK_SIZE + 1, TOP_LEFT_Y + y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2), 1)
+            pygame.draw.rect(surface, (224, 224, 244), (TOP_LEFT_X + x * BLOCK_SIZE + 1, TOP_LEFT_Y + y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2), 1)
 
     # draw grid and border
     draw_grid(surface, 20, 10)
@@ -311,7 +311,8 @@ def play_random_song(songs):
 
 def draw_current_song(surface, current_song):
     font = pygame.font.SysFont('forte', 20)
-    label = font.render('Now Playing: ' + current_song, 1, (255,255,255))
+    song_name, _ = os.path.splitext(current_song)
+    label = font.render('Now Playing: ' + song_name, 1, (255,255,255))
 
     surface.blit(label, (S_WIDTH // 2 - label.get_width() // 2, S_HEIGHT - 40))
 
