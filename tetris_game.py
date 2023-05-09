@@ -1,7 +1,7 @@
 # tetris_game.py
 import pygame
 from tetris.gameplay import ShapeOperations, RowOperations, FallSpeedCalculator, Grid
-from tetris.shapes import get_shape
+from tetris.shapes import Shapes
 from tetris.music import  MusicPlayer, RandomSongDecorator
 from tetris.display import TetrisDisplay
 from tetris.constants import S_HEIGHT, S_WIDTH
@@ -40,8 +40,8 @@ class TetrisGame:
         hold_switched = False
         change_piece = False
         run = True
-        current_piece = get_shape()
-        next_piece = get_shape()
+        current_piece = Shapes.get_shape()
+        next_piece = Shapes.get_shape()
         clock = pygame.time.Clock()
         fall_time = 0
         fall_speed = FallSpeedCalculator.calculate_fall_speed(0)
@@ -129,7 +129,7 @@ class TetrisGame:
                             if hold_piece is None:
                                 hold_piece = current_piece
                                 current_piece = next_piece
-                                next_piece = get_shape()
+                                next_piece = Shapes.get_shape()
                             else:
                                 hold_piece, current_piece = current_piece, hold_piece
                                 current_piece.x = 5
@@ -151,7 +151,7 @@ class TetrisGame:
                     p = (pos[0], pos[1])
                     locked_positions[p] = current_piece.color
                 current_piece = next_piece
-                next_piece = get_shape()
+                next_piece = Shapes.get_shape()
                 change_piece = False
                 hold_switched = False
 
