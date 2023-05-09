@@ -7,7 +7,13 @@ from tetris.display import TetrisDisplay
 from tetris.constants import S_HEIGHT, S_WIDTH
 
 class TetrisGame:
+    """
+    Main class representing the Tetris game.
+    """
     def __init__(self):
+        """
+        Initialize the Tetris game by setting up the window, display, shape_operations, row_operations, and music_player.
+        """
         pygame.mixer.init()
         pygame.font.init()
         self.win = pygame.display.set_mode((S_WIDTH, S_HEIGHT))
@@ -18,6 +24,12 @@ class TetrisGame:
         self.music_player = RandomSongDecorator(MusicPlayer())
 
     def main(self, songs):
+        """
+        Main game loop where the game logic is executed.
+
+        Args:
+            songs (list): List of song files to play during the game.
+        """
         global grid
         #init variables
         locked_positions = {}  # (x,y):(255,0,0)
@@ -169,6 +181,9 @@ class TetrisGame:
     
 
     def main_menu(self):
+        """
+        Display the main menu and start the game when a key is pressed.
+        """
         run = True
         songs = self.music_player.load_songs()
         while run:
