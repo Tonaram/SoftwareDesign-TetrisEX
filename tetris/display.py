@@ -79,6 +79,14 @@ class TetrisDisplay:
                     pygame.draw.rect(self.surface, GRID_COLOR, (sx + j * BLOCK_SIZE, sy + i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 1)
 
     def draw_window(self, ghost_piece, grid, convert_shape_format_func):
+        """
+        Draw the main game window including the grid, shapes, and ghost piece.
+
+        Args:
+            ghost_piece (Shape): The ghost piece to be displayed.
+            grid (list): A 2D list representing the grid.
+            convert_shape_format_func (function): The function to convert the shape format for display.
+        """
         self.surface.fill(BG_COLOR)
 
         title = Text('TETRIS', 50, WHITE)
