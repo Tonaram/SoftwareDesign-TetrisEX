@@ -4,3 +4,5 @@ Tetris game with functionalities like hard drop key, hold piece, next piece, sco
 1. Clone the repository
 2. Make sure to have pygame installed
 3. Run `python run.py`
+
+**Tonatiuh Ramos - Software Design course - 2023**
